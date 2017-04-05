@@ -6,7 +6,7 @@ function ParseTable {
 
     #Extract the tables out of the web request
 
-    $tables = @($WebRequest.ParsedHtml.body.getElementsByTagName("TABLE"))
+    $tables = @($WebRequest.ParsedHtml.getElementsByTagName("TABLE"))
 
     $table = $tables[0]
 
