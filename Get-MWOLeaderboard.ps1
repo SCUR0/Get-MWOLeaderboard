@@ -20,8 +20,6 @@ function ParseTable {
 
         $cells = @($row.Cells)
 
-        # If we've found a table header, remember its titles
-
         if($cells[0].tagName -eq "th"){
 
             $titles = @($cells | % { ("" + $_.InnerText).Trim() })
@@ -29,9 +27,7 @@ function ParseTable {
             continue
 
         }
-
-        #If we haven't found any table headers, make up names "P1", "P2", etc.
-
+        #create titles if not found
         if(-not $titles){
 
             $titles = @(1..($cells.Count + 2) | % { "P$_" })
@@ -39,9 +35,7 @@ function ParseTable {
         }
 
         #Now go through the cells in the the row. For each, try to find the
-
         #title that represents that column and create a hashtable mapping those
-
         #titles to content
 
         $resultObject = [Ordered] @{}
