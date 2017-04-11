@@ -5,57 +5,36 @@ function ParseTable {
     )
 
     #Extract the tables out of the web request
-
     $tables = @($WebRequest.ParsedHtml.getElementsByTagName("TABLE"))
-
     $table = $tables[0]
-
     $titles = @()
-
     $rows = @($table.Rows)
 
     #Go through all of the rows in the table
-
     foreach($row in $rows){
-
         $cells = @($row.Cells)
-
         if($cells[0].tagName -eq "th"){
-
             $titles = @($cells | % { ("" + $_.InnerText).Trim() })
-
             continue
-
         }
+
         #create titles if not found
         if(-not $titles){
-
             $titles = @(1..($cells.Count + 2) | % { "P$_" })
-
         }
 
         #Now go through the cells in the the row. For each, try to find the
         #title that represents that column and create a hashtable mapping those
         #titles to content
-
         $resultObject = [Ordered] @{}
-
         for($counter = 0; $counter -lt $cells.Count; $counter++){
-
             $title = $titles[$counter]
-
             if(-not $title) { continue }
-
-       
-
             $resultObject[$title] = ("" + $cells[$counter].InnerText).Trim()
-
         }
 
         #And finally cast that hashtable to a PSCustomObject
-
         [PSCustomObject] $resultObject
-
     }
 }
 
