@@ -1,3 +1,24 @@
+<#
+.SYNOPSIS
+
+    Use to pull leaderboard data off mwomercs.com
+
+.DESCRIPTION
+	Parses data from mwomercs.com leaderboards. This script
+    should expected to take a long time as it has to go through
+    multiple pages.
+
+.PARAMETER global
+Only pulls global data instead of all classes.
+#>
+
+
+[cmdletbinding()]
+param (
+    [switch]$global
+)
+
+
 function ParseTable {
     param(
         [Parameter(Mandatory = $true)]
@@ -59,6 +80,11 @@ $leaderboards =@{
     "Assualt"= 4
 }
 
+if ($global){
+    $leaderboards =@{
+        "Global" = 0
+    }
+}
 
 
 #Pull web object
@@ -98,6 +124,6 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
         Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Status "Page: $page"
     }
     Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Completed
-    $rawtables | Export-Csv "$savepath\$($leaderboard.name).csv"
-    Write-Output "$($leaderboard.name) saved to $savepath\$($leaderboard.name).csv"  
+    $rawtables | Export-Csv "$savepath\$($leaderboard.name +"_"+ $seasonquestion).csv"
+    Write-Output "$($leaderboard.name) saved to $savepath\$($leaderboard.name +"_"+ $seasonquestion).csv"  
 }
