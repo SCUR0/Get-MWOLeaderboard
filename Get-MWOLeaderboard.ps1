@@ -119,11 +119,13 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
     $leaderboardpage = $null
     while ($leaderboardpage.Content -notlike "*No results found.*"){
         $leaderboardpage=Invoke-WebRequest -Uri ("https://mwomercs.com/profile/leaderboards?page=$page&type=$($leaderboard.value)") -WebSession $mwo
-        $rawtables += ParseTable $leaderboardpage
+        if ($leaderboardpage.Content -notlike "*No results found.*"){
+            $rawtables += ParseTable $leaderboardpage
+        }
         $page++
         Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Status "Page: $page"
     }
     Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Completed
-    $rawtables | Export-Csv "$savepath\$($leaderboard.name +"_"+ $seasonquestion).csv"
+    $rawtables | Export-Csv "$savepath\$($leaderboard.name +"_"+ $seasonquestion).csv" -NoTypeInformation
     Write-Output "$($leaderboard.name) saved to $savepath\$($leaderboard.name +"_"+ $seasonquestion).csv"  
 }
