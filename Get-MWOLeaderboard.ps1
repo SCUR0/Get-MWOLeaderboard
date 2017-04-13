@@ -26,7 +26,14 @@ function ParseTable {
     )
 
     #Extract the tables out of the web request
-    $tables = @($WebRequest.ParsedHtml.getElementsByTagName("TABLE"))
+    try {
+        $tables = @($WebRequest.ParsedHtml.getElementsByTagName("TABLE"))
+    }
+    catch{
+        Write-Error "An Error was encountered while trying to pull element by tag `
+        name table."
+        exit
+    }
     $table = $tables[0]
     $titles = @()
     $rows = @($table.Rows)
