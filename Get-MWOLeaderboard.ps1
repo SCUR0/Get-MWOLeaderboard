@@ -9,7 +9,7 @@
     multiple pages.
 
 .PARAMETER global
-Only pulls global data instead of all classes.
+Only pulls global data instead of all classes. 
 #>
 
 
@@ -27,11 +27,12 @@ function ParseTable {
 
     #Extract the tables out of the web request
     try {
-        $tables = @($WebRequest.ParsedHtml.getElementsByTagName("TABLE"))
+        $tables = @($WebRequest.ParsedHtml.getElementsByClassName("table table-striped"))
     }
     catch{
         Write-Error "An Error was encountered while trying to pull element by tag `
         name table."
+        Write-Output $WebRequest.Content
         exit
     }
     $table = $tables[0]
@@ -125,7 +126,9 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
     $rawtables = @()
     $leaderboardpage = $null
     while ($leaderboardpage.Content -notlike "*No results found.*"){
+        $progressPreference = 'silentlyContinue'
         $leaderboardpage=Invoke-WebRequest -Uri ("https://mwomercs.com/profile/leaderboards?page=$page&type=$($leaderboard.value)") -WebSession $mwo
+        $progressPreference = 'Continue'
         if ($leaderboardpage.Content -notlike "*No results found.*"){
             $rawtables += ParseTable $leaderboardpage
         }
