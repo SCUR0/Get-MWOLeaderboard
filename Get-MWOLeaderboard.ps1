@@ -30,8 +30,9 @@ function ParseTable {
         $tables = @($WebRequest.ParsedHtml.getElementsByClassName("table table-striped"))
     }
     catch{
-        Write-Error "An Error was encountered while trying to pull element by tag `
-        name table."
+        Write-Error "An Error was encountered while trying to pull element by class `
+        name."
+	Write-Output "Dumping last parse content.
         Write-Output $WebRequest.Content
         exit
     }
