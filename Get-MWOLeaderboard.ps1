@@ -5,8 +5,8 @@
 
 .DESCRIPTION
 	Parses data from mwomercs.com leaderboards. This script
-    should expected to take a long time as it has to go through
-    multiple pages.
+    should be expected to take a long time as it has to go parse multiple
+    pages.
 
 .PARAMETER global
 Only pulls global data instead of all classes. 
@@ -27,14 +27,11 @@ function ParseTable {
 
     #Extract the tables out of the web request
     try {
-        $tables = @($WebRequest.ParsedHtml.getElementsByClassName("table table-striped"))
+        $tables = @($WebRequest.ParsedHtml.getElementsByTagName("table"))
     }
     catch{
-        Write-Error "An Error was encountered while trying to pull element by class `
-        name."
-	Write-Output "Dumping last parse content.
-        Write-Output $WebRequest.Content
-        exit
+        Write-Error "An Error was encountered while trying to pull element by tag `
+        name table."
     }
     $table = $tables[0]
     $titles = @()
@@ -81,6 +78,7 @@ $season = $seasonquestion - 1
 $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($PasswordString))
 $loginUrl = "https://mwomercs.com/profile/leaderboards"
 $savepath = [Environment]::GetFolderPath("MyDocuments")
+$ErrorCount = 0
 $leaderboards =@{
     "Global" = 0
     "Light"  = 1
@@ -119,7 +117,7 @@ $mwo.Cookies.Add($seasoncookie);
 
 #Submit loginform
 $r=Invoke-WebRequest -Uri ('https://mwomercs.com/do/login') -WebSession $mwo -Method POST -Body $form.Fields
-sleep 1
+sleep 5
 
 #pull leaderboards 
 foreach ($leaderboard in $leaderboards.GetEnumerator()){
@@ -127,16 +125,34 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
     $rawtables = @()
     $leaderboardpage = $null
     while ($leaderboardpage.Content -notlike "*No results found.*"){
-        $progressPreference = 'silentlyContinue'
-        $leaderboardpage=Invoke-WebRequest -Uri ("https://mwomercs.com/profile/leaderboards?page=$page&type=$($leaderboard.value)") -WebSession $mwo
-        $progressPreference = 'Continue'
-        if ($leaderboardpage.Content -notlike "*No results found.*"){
-            $rawtables += ParseTable $leaderboardpage
-        }
+        do{
+            $ParseFail = $null
+            $progressPreference = 'silentlyContinue'
+            $leaderboardpage=Invoke-WebRequest -Uri ("https://mwomercs.com/profile/leaderboards?page=$page&type=$($leaderboard.value)") -WebSession $mwo
+            $progressPreference = 'Continue'
+            if ($leaderboardpage.Content -notlike "*No results found.*"){
+                Try {
+                        ParseTable $leaderboardpage -ErrorAction Stop | `
+                        Export-Csv "$savepath\$($leaderboard.name +"_"+ $seasonquestion).csv" -NoTypeInformation -Append
+                    }
+                catch {
+                    Write-Warning "Error encountered during parse. Retrying..."
+                    $ParseFail = $true
+                    $ErrorCount++
+                    if ($ErrorCount -ge 1){
+                        Write-Warning "Retry number $ErrorCount."
+                    }
+                    Start-Sleep -Seconds 30
+                    }
+            }
+        }until ((!$ParseFail) -or ($ErrorCount -ge 30))
+        if (($ParseFail) -and ($ErrorCount -ge 30)){
+                Write-Error "Parse error retry exceeded"
+                exit
+            }
         $page++
         Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Status "Page: $page"
     }
     Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Completed
-    $rawtables | Export-Csv "$savepath\$($leaderboard.name +"_"+ $seasonquestion).csv" -NoTypeInformation
     Write-Output "$($leaderboard.name) saved to $savepath\$($leaderboard.name +"_"+ $seasonquestion).csv"  
 }
