@@ -56,9 +56,8 @@ function ParseTable {
             $titles = @(1..($cells.Count + 2) | % { "P$_" })
         }
 
-        #Now go through the cells in the the row. For each, try to find the
-        #title that represents that column and create a hashtable mapping those
-        #titles to content
+        <#Now go through the cells in the the row. For each, try to find the
+        title that represents that column and create a hash#>
         $resultObject = [Ordered] @{}
         for($counter = 0; $counter -lt $cells.Count; $counter++){
             $title = $titles[$counter]
@@ -66,7 +65,7 @@ function ParseTable {
             $resultObject[$title] = ("" + $cells[$counter].InnerText).Trim()
         }
 
-        #And finally cast that hashtable to a PSCustomObject
+        #hashtable to PSCustomObject
         [PSCustomObject] $resultObject
     }
 }
