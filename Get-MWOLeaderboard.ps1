@@ -15,7 +15,10 @@ Only pulls global data instead of all classes.
 
 [cmdletbinding()]
 param (
-    [switch]$global
+    [switch]$global,
+
+    [Parameter(Mandatory=$True)]
+    [string]$season
 )
 
 
@@ -73,8 +76,8 @@ function ParseTable {
 #Configuration varriables
 $username = Read-Host "MWO Username (email)?"
 $passwordString = read-host -AsSecureString "Password?"
-$seasonquestion = Read-Host "Season?"
-$season = $seasonquestion - 1
+#subtract 1 due to MWO leaderboard format for season
+$season = $season - 1
 $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($PasswordString))
 $loginUrl = "https://mwomercs.com/profile/leaderboards"
 $savepath = [Environment]::GetFolderPath("MyDocuments")
