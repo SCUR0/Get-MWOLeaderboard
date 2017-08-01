@@ -9,7 +9,10 @@
     pages.
 
 .PARAMETER global
-Only pulls global data instead of all classes. 
+Only pulls global data instead of all classes.
+
+.PARAMETER season
+The season that you would like to parse.
 #>
 
 
