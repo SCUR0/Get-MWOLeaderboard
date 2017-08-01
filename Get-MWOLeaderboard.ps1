@@ -77,7 +77,7 @@ function ParseTable {
 $username = Read-Host "MWO Username (email)?"
 $passwordString = read-host -AsSecureString "Password?"
 #subtract 1 due to MWO leaderboard format for season
-$season = $season - 1
+$seasonquery = $season - 1
 $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($PasswordString))
 $loginUrl = "https://mwomercs.com/profile/leaderboards"
 $savepath = [Environment]::GetFolderPath("MyDocuments")
@@ -113,7 +113,7 @@ $mwo.Cookies.Add($sortcookie);
 
 $seasoncookie = New-Object System.Net.Cookie   
 $seasoncookie.Name = "leaderboard_season"
-$seasoncookie.Value = "$season"
+$seasoncookie.Value = "$seasonquery"
 $seasoncookie.Domain = ".mwomercs.com"
 $mwo.Cookies.Add($seasoncookie);
 
@@ -136,7 +136,7 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
             if ($leaderboardpage.Content -notlike "*No results found.*"){
                 Try {
                         ParseTable $leaderboardpage -ErrorAction Stop | `
-                        Export-Csv "$savepath\$($leaderboard.name +"_"+ $seasonquestion).csv" -NoTypeInformation -Append
+                        Export-Csv "$savepath\$($leaderboard.name +"_"+ $season).csv" -NoTypeInformation -Append
                     }
                 catch {
                     Write-Warning "Error encountered during parse. Retrying..."
@@ -157,5 +157,5 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
         Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Status "Page: $page"
     }
     Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Completed
-    Write-Output "$($leaderboard.name) saved to $savepath\$($leaderboard.name +"_"+ $seasonquestion).csv"  
+    Write-Output "$($leaderboard.name) saved to $savepath\$($leaderboard.name +"_"+ $season).csv"  
 }
