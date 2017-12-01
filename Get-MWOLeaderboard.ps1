@@ -138,7 +138,7 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
             if ($leaderboardpage.Content -notlike "*No results found.*"){
                 Try {
                         ParseTable $leaderboardpage -ErrorAction Stop | `
-                        Export-Csv "$savepath\$($leaderboard.name +"_"+ $season).csv" -NoTypeInformation -Append
+                        Export-Csv "$savepath\$($leaderboard.name +"_"+ $season).csv" -Delimiter "`t" -NoTypeInformation -Append
                     }
                 catch {
                     Write-Warning "Error encountered during parse. Retrying..."
