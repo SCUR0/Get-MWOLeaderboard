@@ -78,6 +78,8 @@ function ParseTable {
 #Configuration varriables
 $username = Read-Host "MWO Username (email)?"
 $passwordString = read-host -AsSecureString "Password?"
+#Respect Original Progress Preference
+$OriginalProgressPreference=$ProgressPreference
 #subtract 1 due to MWO leaderboard format for season
 $seasonquery = $season - 1
 $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($PasswordString))
@@ -132,9 +134,9 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
     while ($leaderboardpage.Content -notlike "*No results found.*"){
         do{
             $ParseFail = $null
-            $progressPreference = 'silentlyContinue'
+            $ProgressPreference = 'silentlyContinue'
             $leaderboardpage=Invoke-WebRequest -Uri ("https://mwomercs.com/profile/leaderboards?page=$page&type=$($leaderboard.value)") -WebSession $mwo
-            $progressPreference = 'Continue'
+            $ProgressPreference = $OriginalProgressPreference
             if ($leaderboardpage.Content -notlike "*No results found.*"){
                 Try {
                         ParseTable $leaderboardpage -ErrorAction Stop | `
