@@ -108,7 +108,7 @@ $leaderboards =@{
     "Light"  = 1
     "Medium" = 2
     "Heavy"  = 3
-    "Assualt"= 4
+    "Assault"= 4
 }
 
 if ($global){
