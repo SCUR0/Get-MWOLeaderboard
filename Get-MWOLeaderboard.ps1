@@ -47,13 +47,21 @@ function ParseTable {
     foreach($row in $rows){
         $cells = @($row.Cells)
         if($cells[0].tagName -eq "th"){
-            $titles = @($cells | % { ("" + $_.InnerText).Trim() })
+            $titles = @(
+                foreach($cell in $cells){
+                    ("" + $cell.InnerText).Trim() 
+                }
+            )
             continue
         }
 
         #create titles if not found
         if(-not $titles){
-            $titles = @(1..($cells.Count + 2) | % { "P$_" })
+            $titles = @(
+                foreach ($cell in (1..($cells.Count + 2))){
+                     "P$cell" 
+                }
+            )
         }
 
         <#Now go through the cells in the the row. For each, try to find the
@@ -70,7 +78,16 @@ function ParseTable {
     }
 }
 
-
+#Load Parallel Script/Module
+$IParallelLocation="C:\Program Files\WindowsPowerShell\Modules\Invoke-Parallel\Invoke-Parallel.ps1"
+try{
+    . $IParallelLocation
+}catch{
+    Write-Error "Invoke-Parallel script is required. Download at https://github.com/RamblingCookieMonster/Invoke-Parallel."
+    Write-Output "Place Invoke-Parallel script at $IParallelLocation"
+    pause
+    exit
+}
 
 #Set SSL to updated version
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -100,6 +117,24 @@ if ($global){
     }
 }
 
+#checks to make sure documents path is clear for parse
+$ClassArray=@(
+    "Global_",
+    "Light_",
+    "Medium_",
+    "Heavy_"
+    "Assault_"
+)
+Foreach ($Class in $ClassArray){
+    $ClassDocumentPath ="$($savepath)\$($Class)$season.csv"
+    If (Test-Path $ClassDocumentPath){
+        Write-Error "$class$season file already exists!"
+        Write-Output "Remove file at $ClassDocumentPath and restart script."
+        pause
+        exit
+    }
+}
+
 
 #Pull web object
 
@@ -124,23 +159,26 @@ $mwo.Cookies.Add($seasoncookie);
 
 #Submit loginform
 $r=Invoke-WebRequest -Uri ('https://mwomercs.com/do/login') -WebSession $mwo -Method POST -Body $form.Fields
-sleep 5
+Write-Host "Parse request initialized." 
+start-sleep 3
 
 #pull leaderboards 
-foreach ($leaderboard in $leaderboards.GetEnumerator()){
+
+$Leaderboards.GetEnumerator() | Invoke-Parallel -ImportVariables -ImportFunctions -ScriptBlock {
     $page= 0
     $rawtables = @()
     $leaderboardpage = $null
+    write-host "Parsing $($_.name)..."
     while ($leaderboardpage.Content -notlike "*No results found.*"){
         do{
             $ParseFail = $null
             $ProgressPreference = 'silentlyContinue'
-            $leaderboardpage=Invoke-WebRequest -Uri ("https://mwomercs.com/profile/leaderboards?page=$page&type=$($leaderboard.value)") -WebSession $mwo
+            $leaderboardpage=Invoke-WebRequest -Uri ("https://mwomercs.com/profile/leaderboards?page=$page&type=$($_.value)") -WebSession $mwo
             $ProgressPreference = $OriginalProgressPreference
             if ($leaderboardpage.Content -notlike "*No results found.*"){
                 Try {
                         ParseTable $leaderboardpage -ErrorAction Stop | `
-                        Export-Csv "$savepath\$($leaderboard.name +"_"+ $season).csv" -Delimiter "`t" -NoTypeInformation -Append
+                        Export-Csv "$savepath\$($_.name +"_"+ $season).csv" -Delimiter "`t" -NoTypeInformation -Append
                     }
                 catch {
                     Write-Warning "Error encountered during parse. Retrying..."
@@ -152,14 +190,15 @@ foreach ($leaderboard in $leaderboards.GetEnumerator()){
                     Start-Sleep -Seconds 30
                     }
             }
-        }until ((!$ParseFail) -or ($ErrorCount -ge 30))
-        if (($ParseFail) -and ($ErrorCount -ge 30)){
+        }until ((!$ParseFail) -or ($ErrorCount -ge 5))
+        if (($ParseFail) -and ($ErrorCount -ge 5)){
                 Write-Error "Parse error retry exceeded"
+                pause
                 exit
             }
         $page++
-        Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Status "Page: $page"
+        #Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Status "Page: $page"
     }
-    Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Completed
-    Write-Output "$($leaderboard.name) saved to $savepath\$($leaderboard.name +"_"+ $season).csv"  
+    #Write-Progress -Activity "Scanning $($leaderboard.name) Pages..." -Completed
+    Write-Output "$($_.name) saved to $savepath\$($_.name +"_"+ $season).csv"  
 }
