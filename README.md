@@ -1,9 +1,7 @@
 # Get-MWOLeaderboard
 Parses MWO leaderboard data from PGI's website
 
-Requires Invoke-Parallel
-
-(https://github.com/RamblingCookieMonster/Invoke-Parallel)
+Requires Invoke-Parallel (https://github.com/RamblingCookieMonster/Invoke-Parallel)
 
 Ouputs CSV files to your Documents folder (usually C:\users\username\documents).
 
