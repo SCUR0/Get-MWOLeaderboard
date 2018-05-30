@@ -70,7 +70,7 @@ function ParseTable {
         for($counter = 0; $counter -lt $cells.Count; $counter++){
             $title = $titles[$counter]
             if(-not $title) { continue }
-            $resultObject[$title] = ("" + $cells[$counter].InnerText).Trim()
+            $resultObject[$title] = ("" + $cells[$counter].InnerHTML
         }
 
         #hashtable to PSCustomObject
