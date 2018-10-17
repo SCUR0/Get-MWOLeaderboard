@@ -13,15 +13,18 @@ Only pulls global data instead of all classes.
 
 .PARAMETER season
 The season that you would like to parse.
+
+.PARAMETER savepath
+The location you want to save. Script will dynamically default to documents folder if parameter is not used.
 #>
 
 
 [cmdletbinding()]
 param (
     [switch]$global,
-
     [Parameter(Mandatory=$True)]
-    [string]$season
+    [string]$season,
+    $savepath = [Environment]::GetFolderPath("MyDocuments")
 )
 
 
@@ -101,7 +104,6 @@ $OriginalProgressPreference=$ProgressPreference
 $seasonquery = $season - 1
 $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($PasswordString))
 $loginUrl = "https://mwomercs.com/profile/leaderboards"
-$savepath = [Environment]::GetFolderPath("MyDocuments")
 $ErrorCount = 0
 $leaderboards =@{
     "Global" = 0
