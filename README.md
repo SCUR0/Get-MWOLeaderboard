@@ -6,7 +6,7 @@ Requires Invoke-Parallel (https://github.com/RamblingCookieMonster/Invoke-Parall
 Ouputs CSV files to your Documents folder if parameter left empty (usually C:\users\username\documents).
 
 Script requires login credentials. This is needed because the leaderboard requires login.
-You can check source code. Optional password parameter if you would like to pass password parameter.
+You can check source code. Optional password parameter if you would like to pass password.
 
 
 ### Note
