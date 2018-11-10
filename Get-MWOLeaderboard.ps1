@@ -99,8 +99,6 @@ if (!$password){
 #Configuration varriables
 #Respect Original Progress Preference
 $OriginalProgressPreference=$ProgressPreference
-#subtract 1 due to MWO leaderboard format for season
-$seasonquery = $season - 1
 $loginUrl = "https://mwomercs.com/profile/leaderboards"
 $ErrorCount = 0
 $leaderboards =@{
@@ -152,7 +150,7 @@ $mwo.Cookies.Add($sortcookie);
 
 $seasoncookie = New-Object System.Net.Cookie   
 $seasoncookie.Name = "leaderboard_season"
-$seasoncookie.Value = "$seasonquery"
+$seasoncookie.Value = "$season"
 $seasoncookie.Domain = ".mwomercs.com"
 $mwo.Cookies.Add($seasoncookie);
 
