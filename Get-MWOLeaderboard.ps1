@@ -9,19 +9,19 @@
     pages.
 
 .PARAMETER mwoEmail
-MWO email used to login mwo.
+    MWO email used to login mwo.
 
 .PARAMETER password
-Used if you want to automate login. Can be left blank if you prefer manual input.
+    Used if you want to automate login. Can be left blank if you prefer manual input.
 
 .PARAMETER global
-Only pulls global data instead of all classes.
+    Only pulls global data instead of all classes.
 
 .PARAMETER season
-The season that you would like to parse.
+    The season that you would like to parse.
 
 .PARAMETER savepath
-The location you want to save. Script will dynamically default to documents folder if parameter is not used.
+    The location you want to save. Script will dynamically default to documents folder if parameter is not used.
 #>
 
 
@@ -101,28 +101,35 @@ if (!$password){
 $OriginalProgressPreference=$ProgressPreference
 $loginUrl = "https://mwomercs.com/profile/leaderboards"
 $ErrorCount = 0
-$leaderboards =@{
-    "Global" = 0
-    "Light"  = 1
-    "Medium" = 2
-    "Heavy"  = 3
-    "Assault"= 4
-}
 
 if ($global){
     $leaderboards =@{
         "Global" = 0
     }
+}else{
+    $leaderboards =@{
+        "Global" = 0
+        "Light"  = 1
+        "Medium" = 2
+        "Heavy"  = 3
+        "Assault"= 4
+    }
 }
 
 #checks to make sure documents path is clear for parse
-$ClassArray=@(
-    "Global_",
-    "Light_",
-    "Medium_",
-    "Heavy_"
-    "Assault_"
-)
+if ($global){
+    $ClassArray=@(
+        "Global_"
+    )
+}else{
+    $ClassArray=@(
+        "Global_",
+        "Light_",
+        "Medium_",
+        "Heavy_"
+        "Assault_"
+    )
+}
 Foreach ($Class in $ClassArray){
     $ClassDocumentPath ="$($savepath)\$($Class)$season.csv"
     If (Test-Path $ClassDocumentPath){
