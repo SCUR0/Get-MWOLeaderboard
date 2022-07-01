@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 
     Use to pull leaderboard data off mwomercs.com
@@ -8,11 +8,8 @@
     should be expected to take a long time as it has to go parse multiple
     pages.
 
-.PARAMETER mwoEmail
-    MWO email used to login mwo.
-
-.PARAMETER password
-    Used if you want to automate login. Can be left blank if you prefer manual input.
+.PARAMETER Credential
+    MWO email and password to login to mwomercs.com
 
 .PARAMETER global
     Only pulls global data instead of all classes.
@@ -27,13 +24,11 @@
 
 [cmdletbinding()]
 param (
-    [switch]$global,
+    [switch]$Global,
+    [System.Management.Automation.PSCredential]$Credential,
     [Parameter(Mandatory=$True)]
-    [string]$mwoEmail,
-    $password,
-    [Parameter(Mandatory=$True)]
-    [string]$season,
-    $savepath = [Environment]::GetFolderPath("MyDocuments")
+    [string]$Season,
+    $SavePath = [Environment]::GetFolderPath("MyDocuments")
 )
 
 
@@ -90,10 +85,14 @@ try{
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 
-if (!$password){
+if (!$Credential){
     #request password if left out of parameter
-    $passwordString = read-host -AsSecureString "Password?"
-    $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($PasswordString))
+    $Credential = Get-Credential -Username "email@domain" -Message "MWOMercs.com login"
+}
+
+if ((!$Credential.UserName) -or (!$Credential.GetNetworkCredential().Password)){
+    Write-Error "Username and password is required"
+    exit
 }
 
 #Configuration varriables
@@ -102,7 +101,7 @@ $OriginalProgressPreference=$ProgressPreference
 $loginUrl = "https://mwomercs.com/profile/leaderboards"
 $ErrorCount = 0
 
-if ($global){
+if ($Global){
     $leaderboards =@{
         "Global" = 0
     }
@@ -117,7 +116,7 @@ if ($global){
 }
 
 #checks to make sure documents path is clear for parse
-if ($global){
+if ($Global){
     $ClassArray=@(
         "Global_"
     )
@@ -131,9 +130,9 @@ if ($global){
     )
 }
 Foreach ($Class in $ClassArray){
-    $ClassDocumentPath ="$($savepath)\$($Class)$season.csv"
+    $ClassDocumentPath ="$($SavePath)\$($Class)$Season.csv"
     If (Test-Path $ClassDocumentPath){
-        Write-Error "$class$season file already exists!"
+        Write-Error "$Class$Season file already exists!"
         Write-Output "Remove file at $ClassDocumentPath and restart script."
         pause
         exit
@@ -145,8 +144,8 @@ Foreach ($Class in $ClassArray){
 
 $r = Invoke-WebRequest -Uri('https://mwomercs.com/do/login') -SessionVariable mwo
 $form = $r.Forms
-$form.fields['email'] = $mwoEmail
-$form.fields['password'] = $password
+$form.fields['email'] = $Credential.UserName
+$form.fields['password'] = $Credential.GetNetworkCredential().Password
 
 #set cookies
 $sortcookie = New-Object System.Net.Cookie   
@@ -157,7 +156,7 @@ $mwo.Cookies.Add($sortcookie);
 
 $seasoncookie = New-Object System.Net.Cookie   
 $seasoncookie.Name = "leaderboard_season"
-$seasoncookie.Value = "$season"
+$seasoncookie.Value = "$Season"
 $seasoncookie.Domain = ".mwomercs.com"
 $mwo.Cookies.Add($seasoncookie);
 
@@ -174,7 +173,7 @@ $Leaderboards.GetEnumerator() | Invoke-Parallel -ImportVariables -ImportFunction
     $rawtables = @()
     $leaderboardpage = $null
     $FirstParse = $true
-    $TextStream=[System.IO.StreamWriter]"$savepath\$($_.name +"_"+ $season).csv"
+    $TextStream=[System.IO.StreamWriter]"$SavePath\$($_.name +"_"+ $Season).csv"
     Write-Verbose "Parsing $($_.name)..." -Verbose
     while ($leaderboardpage.Content -notlike "*No results found.*"){
         do{
@@ -211,5 +210,5 @@ $Leaderboards.GetEnumerator() | Invoke-Parallel -ImportVariables -ImportFunction
         $page++
     }
     $TextStream.close()
-    Write-Verbose "$($_.name) saved to $savepath\$($_.name +"_"+ $season).csv" -Verbose
+    Write-Verbose "$($_.name) saved to $SavePath\$($_.name +"_"+ $Season).csv" -Verbose
 }
