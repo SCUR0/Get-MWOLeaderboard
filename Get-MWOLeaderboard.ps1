@@ -1,34 +1,53 @@
-﻿<#
+<#
 .SYNOPSIS
 
     Use to pull leaderboard data off mwomercs.com
 
 .DESCRIPTION
-	Parses data from mwomercs.com leaderboards. This script
-    should be expected to take a long time as it has to go parse multiple
-    pages.
+    Parses data from mwomercs.com leaderboards. Due to the nature of having to parse many pages from a website's output,
+it should be expected to take a long time. Usually 20+ minutes for all tables running parallel.
 
 .PARAMETER Credential
     MWO email and password to login to mwomercs.com
 
-.PARAMETER global
-    Only pulls global data instead of all classes.
+.PARAMETER Global
+    Grab global leaderboards. If no leaderboard parameter specified all will be pulled
 
-.PARAMETER season
+.PARAMETER Light
+    Grab light leaderboards. If no leaderboard parameter specified all will be pulled
+
+.PARAMETER Medium
+    Grab medium leaderboards. If no leaderboard parameter specified all will be pulled
+
+.PARAMETER Heavy
+    Grab heavy leaderboards. If no leaderboard parameter specified all will be pulled
+
+.PARAMETER Assault
+    Grab assault leaderboards. If no leaderboard parameter specified all will be pulled
+
+.PARAMETER Season
     The season that you would like to parse.
 
-.PARAMETER savepath
-    The location you want to save. Script will dynamically default to documents folder if parameter is not used.
+.PARAMETER Threads
+    How many parallel parses to run at once. Defaults to 5.
+
+.PARAMETER Savepath
+    Output path for parsed CSVs. If not provided the script will use current directory
 #>
 
 
 [cmdletbinding()]
 param (
     [switch]$Global,
+    [switch]$Light,
+    [switch]$Medium,
+    [switch]$Heavy,
+    [switch]$Assault,
     [System.Management.Automation.PSCredential]$Credential,
     [Parameter(Mandatory=$True)]
     [string]$Season,
-    $SavePath = [Environment]::GetFolderPath("MyDocuments")
+    [int]$Threads = 5,
+    $SavePath
 )
 
 
@@ -77,7 +96,6 @@ try{
 }catch{
     Write-Error "Invoke-Parallel script is required. Download at https://github.com/RamblingCookieMonster/Invoke-Parallel."
     Write-Output "Place Invoke-Parallel script at $IParallelLocation"
-    pause
     exit
 }
 
@@ -100,13 +118,30 @@ if ((!$Credential.UserName) -or (!$Credential.GetNetworkCredential().Password)){
 $OriginalProgressPreference=$ProgressPreference
 $loginUrl = "https://mwomercs.com/profile/leaderboards"
 $ErrorCount = 0
+if (!$SavePath){
+    $SavePath = (Get-Location).Path
+}
 
-if ($Global){
-    $leaderboards =@{
-        "Global" = 0
+
+if ($Global -or $Light -or $Medium -or $Heavy -or $Assault){
+    $Leaderboards = @{}
+    if ($Global){
+        $Leaderboards['Global']  = 0
+    }
+    if ($Light){
+        $Leaderboards['Light']   = 1
+    }
+    if ($Medium){
+        $Leaderboards['Medium']  = 2
+    }
+    if ($Heavy){
+        $Leaderboards['Heavy']   = 3
+    }
+    if ($Assault){
+        $Leaderboards['Assault'] = 4
     }
 }else{
-    $leaderboards =@{
+    $Leaderboards =@{
         "Global" = 0
         "Light"  = 1
         "Medium" = 2
@@ -116,25 +151,11 @@ if ($Global){
 }
 
 #checks to make sure documents path is clear for parse
-if ($Global){
-    $ClassArray=@(
-        "Global_"
-    )
-}else{
-    $ClassArray=@(
-        "Global_",
-        "Light_",
-        "Medium_",
-        "Heavy_"
-        "Assault_"
-    )
-}
-Foreach ($Class in $ClassArray){
-    $ClassDocumentPath ="$($SavePath)\$($Class)$Season.csv"
+Foreach ($Class in $Leaderboards.GetEnumerator()){
+    $ClassDocumentPath ="$($SavePath)\$($Class.Name)_$Season.csv"
     If (Test-Path $ClassDocumentPath){
         Write-Error "$Class$Season file already exists!"
         Write-Output "Remove file at $ClassDocumentPath and restart script."
-        pause
         exit
     }
 }
@@ -168,7 +189,7 @@ start-sleep 2
 
 #pull leaderboards 
 
-$Leaderboards.GetEnumerator() | Invoke-Parallel -ImportVariables -ImportFunctions -ScriptBlock {
+$Leaderboards.GetEnumerator() | Invoke-Parallel -ImportVariables -Throttle $Threads -ImportFunctions -ScriptBlock {
     $page= 0
     $rawtables = @()
     $leaderboardpage = $null
@@ -202,8 +223,7 @@ $Leaderboards.GetEnumerator() | Invoke-Parallel -ImportVariables -ImportFunction
         }until ((!$ParseFail) -or ($ErrorCount -ge 5))
         if (($ParseFail) -and ($ErrorCount -ge 5)){
             $TextStream.close()    
-            Write-Error "Parse error retry exceeded"
-            pause
+            Write-Error "Parse error or retry limit exceeded"
             exit
         }
         $FirstParse=$false
